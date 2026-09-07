@@ -7,7 +7,7 @@ azure-identity==1.19.0
 azure-storage-file-datalake==12.18.0
 azure-data-tables==12.6.0
 azure-communication-email==1.0.0
-azure-kusto-data>=4.5.1,<5
+azure-kusto-data>=6.0.4,<7
 openpyxl==3.1.5
 reportlab==4.2.5
 matplotlib==3.9.4
