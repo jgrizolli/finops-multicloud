@@ -1,5 +1,5 @@
 azure-functions>=1.21
-azure-identity>=1.17
+azure-identity>=1.25.3
 azure-storage-file-datalake>=12.17
 oci>=2.135
 pandas>=2.2
