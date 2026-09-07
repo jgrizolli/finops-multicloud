@@ -1,0 +1,45 @@
+{
+  "name": "mc_HubLake_Binary",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "mc_HubDataLake",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "container": {
+        "type": "string",
+        "defaultValue": "ingestion"
+      },
+      "folderPath": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "fileName": {
+        "type": "string",
+        "defaultValue": ""
+      }
+    },
+    "folder": {
+      "name": "Multicloud"
+    },
+    "annotations": [],
+    "type": "Binary",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": {
+          "value": "@dataset().container",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().folderPath",
+          "type": "Expression"
+        },
+        "fileName": {
+          "value": "@dataset().fileName",
+          "type": "Expression"
+        }
+      }
+    }
+  }
+}

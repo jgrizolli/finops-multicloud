@@ -1,0 +1,10 @@
+{
+  "name": "mc_KeyVault",
+  "properties": {
+    "type": "AzureKeyVault",
+    "annotations": [],
+    "typeProperties": {
+      "baseUrl": "https://<<NOME-DO-KEY-VAULT>>.vault.azure.net/"
+    }
+  }
+}

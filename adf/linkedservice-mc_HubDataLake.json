@@ -1,0 +1,10 @@
+{
+  "name": "mc_HubDataLake",
+  "properties": {
+    "type": "AzureBlobFS",
+    "annotations": [],
+    "typeProperties": {
+      "url": "https://<<STORAGE-DO-HUB>>.dfs.core.windows.net/"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "mc_aws_DailySchedule",
+  "properties": {
+    "description": "Ingestao FOCUS da AWS todo dia as 07:00 UTC",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "mc_aws_IngestFocus",
+          "type": "PipelineReference"
+        },
+        "parameters": {
+          "monthsBack": 1
+        }
+      }
+    ],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2026-01-01T07:00:00Z",
+        "timeZone": "UTC",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            7
+          ]
+        }
+      }
+    }
+  }
+}

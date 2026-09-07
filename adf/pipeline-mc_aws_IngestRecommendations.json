@@ -1,0 +1,381 @@
+{
+  "name": "mc_aws_IngestRecommendations",
+  "properties": {
+    "description": "Copia as recomendacoes do Cost Optimization Hub (Data Exports) para ingestion/Recommendations, alinhadas ao esquema do hub.",
+    "folder": {
+      "name": "Multicloud"
+    },
+    "annotations": [],
+    "parameters": {
+      "exportName": {
+        "type": "string",
+        "defaultValue": "finops-coh-recommendations"
+      },
+      "s3Prefix": {
+        "type": "string",
+        "defaultValue": "focus"
+      },
+      "payerAccountId": {
+        "type": "string",
+        "defaultValue": "<<CONTA-PAGADORA>>"
+      }
+    },
+    "variables": {
+      "ingestionId": {
+        "type": "String"
+      },
+      "targetFolder": {
+        "type": "String"
+      }
+    },
+    "activities": [
+      {
+        "name": "SetIngestionId",
+        "type": "SetVariable",
+        "dependsOn": [],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "ingestionId",
+          "value": {
+            "value": "@formatDateTime(utcNow(), 'yyyyMMddHHmmss')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "SetTargetFolder",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "SetIngestionId",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "targetFolder",
+          "value": {
+            "value": "@concat('Recommendations/', formatDateTime(utcNow(), 'yyyy/MM'), '/aws/', pipeline().parameters.payerAccountId)",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "CopyRecommendations",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "SetTargetFolder",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "ParquetSource",
+            "storeSettings": {
+              "type": "AmazonS3ReadSettings",
+              "recursive": true,
+              "wildcardFolderPath": "*",
+              "wildcardFileName": "*.parquet",
+              "modifiedDatetimeStart": {
+                "value": "@addHours(utcNow(), -26)",
+                "type": "Expression"
+              },
+              "enablePartitionDiscovery": false
+            },
+            "formatSettings": {
+              "type": "ParquetReadSettings"
+            },
+            "additionalColumns": [
+              {
+                "name": "ProviderName",
+                "value": "AWS"
+              },
+              {
+                "name": "x_SourceName",
+                "value": "AWS Cost Optimization Hub"
+              },
+              {
+                "name": "x_SourceProvider",
+                "value": "AWS"
+              },
+              {
+                "name": "x_SourceType",
+                "value": "CostOptimizationRecommendations"
+              },
+              {
+                "name": "x_SourceVersion",
+                "value": "DataExports"
+              }
+            ]
+          },
+          "sink": {
+            "type": "ParquetSink",
+            "storeSettings": {
+              "type": "AzureBlobFSWriteSettings",
+              "copyBehavior": "MergeFiles"
+            },
+            "formatSettings": {
+              "type": "ParquetWriteSettings"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            },
+            "mappings": [
+              {
+                "source": {
+                  "name": "recommendation_id"
+                },
+                "sink": {
+                  "name": "x_RecommendationId"
+                }
+              },
+              {
+                "source": {
+                  "name": "account_id"
+                },
+                "sink": {
+                  "name": "SubAccountId"
+                }
+              },
+              {
+                "source": {
+                  "name": "resource_arn"
+                },
+                "sink": {
+                  "name": "ResourceId"
+                }
+              },
+              {
+                "source": {
+                  "name": "resource_id"
+                },
+                "sink": {
+                  "name": "ResourceName"
+                }
+              },
+              {
+                "source": {
+                  "name": "current_resource_type"
+                },
+                "sink": {
+                  "name": "ResourceType"
+                }
+              },
+              {
+                "source": {
+                  "name": "action_type"
+                },
+                "sink": {
+                  "name": "x_RecommendationCategory"
+                }
+              },
+              {
+                "source": {
+                  "name": "recommended_resource_summary"
+                },
+                "sink": {
+                  "name": "x_RecommendationDescription"
+                }
+              },
+              {
+                "source": {
+                  "name": "estimated_monthly_savings_after_discount"
+                },
+                "sink": {
+                  "name": "x_EffectiveCostSavings",
+                  "type": "Double"
+                }
+              },
+              {
+                "source": {
+                  "name": "estimated_monthly_cost_before_discount"
+                },
+                "sink": {
+                  "name": "x_EffectiveCostBefore",
+                  "type": "Double"
+                }
+              },
+              {
+                "source": {
+                  "name": "estimated_monthly_cost_after_discount"
+                },
+                "sink": {
+                  "name": "x_EffectiveCostAfter",
+                  "type": "Double"
+                }
+              },
+              {
+                "source": {
+                  "name": "last_refresh_timestamp"
+                },
+                "sink": {
+                  "name": "x_RecommendationDate",
+                  "type": "DateTime"
+                }
+              },
+              {
+                "source": {
+                  "name": "ProviderName"
+                },
+                "sink": {
+                  "name": "ProviderName"
+                }
+              },
+              {
+                "source": {
+                  "name": "x_SourceName"
+                },
+                "sink": {
+                  "name": "x_SourceName"
+                }
+              },
+              {
+                "source": {
+                  "name": "x_SourceProvider"
+                },
+                "sink": {
+                  "name": "x_SourceProvider"
+                }
+              },
+              {
+                "source": {
+                  "name": "x_SourceType"
+                },
+                "sink": {
+                  "name": "x_SourceType"
+                }
+              },
+              {
+                "source": {
+                  "name": "x_SourceVersion"
+                },
+                "sink": {
+                  "name": "x_SourceVersion"
+                }
+              }
+            ]
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "mc_AwsS3_Parquet",
+            "type": "DatasetReference",
+            "parameters": {
+              "folderPath": {
+                "value": "@concat(pipeline().parameters.s3Prefix, '/', pipeline().parameters.exportName, '/data')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "mc_HubLake_Parquet",
+            "type": "DatasetReference",
+            "parameters": {
+              "folderPath": {
+                "value": "@variables('targetFolder')",
+                "type": "Expression"
+              },
+              "fileName": {
+                "value": "@concat(variables('ingestionId'), '__aws-coh-recommendations.parquet')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "WriteManifest",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "CopyRecommendations",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobFSReadSettings",
+              "recursive": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "AzureBlobFSWriteSettings"
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "mc_HubLake_Binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "container": "config",
+              "folderPath": "multicloud",
+              "fileName": "manifest.json"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "mc_HubLake_Binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "container": "ingestion",
+              "folderPath": {
+                "value": "@variables('targetFolder')",
+                "type": "Expression"
+              },
+              "fileName": "manifest.json"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

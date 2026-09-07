@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Erros comuns e solucoes
+    url: https://github.com/SEU-USUARIO/finops-multicloud/blob/main/docs/08-erros-regras-limites.md
+    about: Sintoma, causa e solucao dos erros ja mapeados. Comece por aqui.
+  - name: Diario de bordo da implantacao
+    url: https://github.com/SEU-USUARIO/finops-multicloud/blob/main/docs/09-diario-de-bordo.md
+    about: Os erros reais de uma implantacao e o raciocinio por tras de cada um.
+  - name: Microsoft FinOps toolkit
+    url: https://github.com/microsoft/finops-toolkit
+    about: Duvidas sobre o proprio toolkit da Microsoft.

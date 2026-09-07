@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "HUB_STORAGE_ACCOUNT": "finopshubstorexxxxx",
+    "HUB_INGESTION_CONTAINER": "ingestion",
+    "OCI_TENANCY_OCID": "ocid1.tenancy.oc1..aaaa",
+    "OCI_USER_OCID": "ocid1.user.oc1..aaaa",
+    "OCI_FINGERPRINT": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99",
+    "OCI_REGION": "sa-saopaulo-1",
+    "OCI_PRIVATE_KEY_PEM": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----",
+    "OCI_MONTHS_BACK": "1",
+    "OCI_RECOMMENDATIONS_ENABLED": "true",
+    "OCI_SCHEDULE": "0 30 6 * * *"
+  }
+}

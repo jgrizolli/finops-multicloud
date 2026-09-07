@@ -1,0 +1,21 @@
+{
+  "$schema": "https://aka.ms/finops/hubs/settings-schema",
+  "type": "HubInstance",
+  "version": "14.0",
+  "learnMore": "https://aka.ms/finops/hubs",
+  "scopes": [],
+  "retention": {
+    "msexports": {
+      "days": 0
+    },
+    "ingestion": {
+      "months": 13
+    },
+    "raw": {
+      "days": 0
+    },
+    "final": {
+      "months": 13
+    }
+  }
+}

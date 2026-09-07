@@ -1,0 +1,32 @@
+{
+  "name": "mc_AwsS3_Parquet",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "mc_AwsS3",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "folderPath": {
+        "type": "string",
+        "defaultValue": ""
+      }
+    },
+    "folder": {
+      "name": "Multicloud"
+    },
+    "annotations": [],
+    "type": "Parquet",
+    "typeProperties": {
+      "location": {
+        "type": "AmazonS3Location",
+        "bucketName": "<<NOME-DO-BUCKET>>",
+        "folderPath": {
+          "value": "@dataset().folderPath",
+          "type": "Expression"
+        }
+      },
+      "compressionCodec": "snappy"
+    },
+    "schema": []
+  }
+}

@@ -1,0 +1,34 @@
+name: Nova capacidade ou melhoria
+description: Sugerir algo novo no kit, na interface ou na documentacao
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema isso resolve
+      description: Descreva a situacao real, nao a solucao
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area afetada
+      options:
+        - "deploy (hub)"
+        - "webapp (interface)"
+        - "adf, aws ou oci (multicloud)"
+        - "kql e dashboards"
+        - "documentacao"
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas

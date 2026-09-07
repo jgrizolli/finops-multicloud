@@ -1,0 +1,42 @@
+{
+  "_comentario": "Copie para parameters.json e preencha. As chaves sao os nomes dos parametros do Deploy-FinOpsMulticloud.ps1. Nunca versione o arquivo com segredos. Em assinaturas com politica que desliga chave de storage (ex.: internas da Microsoft), use ResourceGroupTags = { SecurityControl: Ignore }.",
+  "SubscriptionId": "Inserir-Subscription-Id-Aqui",
+  "ResourceGroup": "Nome-do-Resource-Group",
+  "Location": "Regiao-do-Resource-Group",
+  "HubName": "Nome-do-Hub",
+  "Mode": "Storage",
+  "FabricQueryUri": "https://<eventhouse>.z0.kusto.fabric.microsoft.com",
+  "FabricCapacityUnits": 2,
+  "ScopesToMonitor": [
+    "/Subscriptions/Inserir-Subscription-Id-Aqui"
+  ],
+  "ManualExports": false,
+  "BackfillMonths": 3,
+  "IngestionRetentionInMonths": 13,
+  "EnableRecommendations": true,
+  "SkipAws": true,
+  "AwsBucketName": "finops-focus-exports-123456789012",
+  "AwsS3Prefix": "focus",
+  "AwsExportName": "finops-focus-1-0",
+  "AwsPayerAccountId": "123456789012",
+  "AwsRegion": "us-east-1",
+  "AwsAccessKeyId": "AKIA....",
+  "AwsSecretAccessKey": "....",
+  "AwsRecommendations": true,
+  "AwsRecommendationsExportName": "finops-coh-recommendations",
+  "SkipOci": true,
+  "OciTenancyOcid": "ocid1.tenancy.oc1..aaaa",
+  "OciUserOcid": "ocid1.user.oc1..aaaa",
+  "OciFingerprint": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99",
+  "OciRegion": "sa-saopaulo-1",
+  "OciPrivateKeyPath": "./oci-finops-reader.pem",
+  "OciNoRecommendations": false,
+  "Tags": {
+    "solution": "finops-multicloud",
+    "owner": "finops-team",
+    "environment": "prod"
+  },
+  "ResourceGroupTags": {
+    "SecurityControl": "Ignore"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "mc_HubLake_Parquet",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "mc_HubDataLake",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "folderPath": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "fileName": {
+        "type": "string",
+        "defaultValue": ""
+      }
+    },
+    "folder": {
+      "name": "Multicloud"
+    },
+    "annotations": [],
+    "type": "Parquet",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": "ingestion",
+        "folderPath": {
+          "value": "@dataset().folderPath",
+          "type": "Expression"
+        },
+        "fileName": {
+          "value": "@dataset().fileName",
+          "type": "Expression"
+        }
+      },
+      "compressionCodec": "snappy"
+    },
+    "schema": []
+  }
+}

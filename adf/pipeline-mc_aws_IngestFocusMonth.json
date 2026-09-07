@@ -1,0 +1,424 @@
+{
+  "name": "mc_aws_IngestFocusMonth",
+  "properties": {
+    "description": "Copia os parquet do Data Export FOCUS (S3) de um mes para ingestion/Costs/yyyy/mm/aws/{payer}, substituindo a carga anterior e gravando o manifest.json.",
+    "folder": {
+      "name": "Multicloud"
+    },
+    "annotations": [],
+    "parameters": {
+      "billingPeriod": {
+        "type": "string"
+      },
+      "exportName": {
+        "type": "string",
+        "defaultValue": "finops-focus-1-0"
+      },
+      "s3Prefix": {
+        "type": "string",
+        "defaultValue": "focus"
+      },
+      "payerAccountId": {
+        "type": "string",
+        "defaultValue": "<<CONTA-PAGADORA>>"
+      }
+    },
+    "variables": {
+      "ingestionId": {
+        "type": "String"
+      },
+      "targetFolder": {
+        "type": "String"
+      },
+      "sourceFolder": {
+        "type": "String"
+      }
+    },
+    "activities": [
+      {
+        "name": "SetIngestionId",
+        "type": "SetVariable",
+        "dependsOn": [],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "ingestionId",
+          "value": {
+            "value": "@formatDateTime(utcNow(), 'yyyyMMddHHmmss')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "SetTargetFolder",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "SetIngestionId",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "targetFolder",
+          "value": {
+            "value": "@concat('Costs/', substring(pipeline().parameters.billingPeriod, 0, 4), '/', substring(pipeline().parameters.billingPeriod, 5, 2), '/aws/', pipeline().parameters.payerAccountId)",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "SetSourceFolder",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "SetTargetFolder",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "sourceFolder",
+          "value": {
+            "value": "@concat(pipeline().parameters.s3Prefix, '/', pipeline().parameters.exportName, '/data/BILLING_PERIOD=', pipeline().parameters.billingPeriod)",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "TargetFolderExists",
+        "type": "GetMetadata",
+        "dependsOn": [
+          {
+            "activity": "SetSourceFolder",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "dataset": {
+            "referenceName": "mc_HubLake_Binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "container": "ingestion",
+              "folderPath": {
+                "value": "@variables('targetFolder')",
+                "type": "Expression"
+              },
+              "fileName": ""
+            }
+          },
+          "fieldList": [
+            "exists"
+          ],
+          "storeSettings": {
+            "type": "AzureBlobFSReadSettings",
+            "recursive": false,
+            "enablePartitionDiscovery": false
+          },
+          "formatSettings": {
+            "type": "BinaryReadSettings"
+          }
+        }
+      },
+      {
+        "name": "IfTargetExists",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "TargetFolderExists",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@activity('TargetFolderExists').output.exists",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "DeletePreviousParquet",
+              "type": "Delete",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.00:30:00",
+                "retry": 1,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "dataset": {
+                  "referenceName": "mc_HubLake_Binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "container": "ingestion",
+                    "folderPath": {
+                      "value": "@variables('targetFolder')",
+                      "type": "Expression"
+                    },
+                    "fileName": ""
+                  }
+                },
+                "enableLogging": false,
+                "storeSettings": {
+                  "type": "AzureBlobFSReadSettings",
+                  "recursive": false,
+                  "wildcardFileName": "*.parquet",
+                  "enablePartitionDiscovery": false
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "ListS3Files",
+        "type": "GetMetadata",
+        "dependsOn": [
+          {
+            "activity": "IfTargetExists",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "dataset": {
+            "referenceName": "mc_AwsS3_Binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "folderPath": {
+                "value": "@variables('sourceFolder')",
+                "type": "Expression"
+              },
+              "fileName": ""
+            }
+          },
+          "fieldList": [
+            "childItems"
+          ],
+          "storeSettings": {
+            "type": "AmazonS3ReadSettings",
+            "recursive": false,
+            "enablePartitionDiscovery": false
+          },
+          "formatSettings": {
+            "type": "BinaryReadSettings"
+          }
+        }
+      },
+      {
+        "name": "FilterParquet",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "ListS3Files",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('ListS3Files').output.childItems",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@and(equals(item().type, 'File'), endswith(item().name, '.parquet'))",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "CopyEachParquet",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "FilterParquet",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('FilterParquet').output.Value",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 8,
+          "activities": [
+            {
+              "name": "CopyParquet",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.02:00:00",
+                "retry": 2,
+                "retryIntervalInSeconds": 60,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "BinarySource",
+                  "storeSettings": {
+                    "type": "AmazonS3ReadSettings",
+                    "recursive": false
+                  },
+                  "formatSettings": {
+                    "type": "BinaryReadSettings"
+                  }
+                },
+                "sink": {
+                  "type": "BinarySink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  }
+                },
+                "enableStaging": false
+              },
+              "inputs": [
+                {
+                  "referenceName": "mc_AwsS3_Binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "folderPath": {
+                      "value": "@variables('sourceFolder')",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@item().name",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "mc_HubLake_Binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "container": "ingestion",
+                    "folderPath": {
+                      "value": "@variables('targetFolder')",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@concat(variables('ingestionId'), '__', item().name)",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "WriteManifest",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "CopyEachParquet",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobFSReadSettings",
+              "recursive": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "AzureBlobFSWriteSettings"
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "mc_HubLake_Binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "container": "config",
+              "folderPath": "multicloud",
+              "fileName": "manifest.json"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "mc_HubLake_Binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "container": "ingestion",
+              "folderPath": {
+                "value": "@variables('targetFolder')",
+                "type": "Expression"
+              },
+              "fileName": "manifest.json"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

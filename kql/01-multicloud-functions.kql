@@ -1,0 +1,133 @@
+// =====================================================================================
+//  FinOps Multicloud: objetos KQL adicionais no banco HUB (Fabric Eventhouse ou ADX)
+//  -------------------------------------------------------------------------------
+//  Rode este script UMA vez no banco "Hub" (queryset do Eventhouse ou ADX Web UI).
+//  Ele nao altera nada do FinOps hub: apenas cria uma tabela de mapeamento e funcoes
+//  com o prefixo/pasta "Multicloud" que os dashboards usam.
+//  Versao alvo: FinOps hubs 12+ (schema v1_2). Em hubs 0.7-11 troque Costs() por Costs_v1_0().
+// =====================================================================================
+
+// -------------------------------------------------------------------------------------
+// 1. Mapa conta -> centro de custo (showback). Preencha com .set-or-append / .ingest inline
+//    ou mantenha em um Lakehouse e crie um shortcut. AccountId = SubAccountId (assinatura Azure,
+//    conta AWS, compartment OCI) ou BillingAccountId.
+// -------------------------------------------------------------------------------------
+.create-merge table CostCenterMap (
+    Provider: string,          // Azure | AWS | OCI
+    AccountId: string,         // id da assinatura / conta / compartment
+    AccountName: string,
+    CostCenter: string,
+    BusinessUnit: string,
+    Application: string,
+    Owner: string,
+    Environment: string
+) with (folder = "Multicloud", docstring = "Mapeamento de contas para centros de custo (showback)")
+
+// exemplo de carga inline (apague as linhas de exemplo depois)
+// .set-or-append CostCenterMap <|
+//     datatable(Provider:string, AccountId:string, AccountName:string, CostCenter:string, BusinessUnit:string, Application:string, Owner:string, Environment:string)[
+//         "Azure", "00000000-0000-0000-0000-000000000000", "sub-prod-core", "CC-1001", "Digital", "Portal", "ana.souza", "prod",
+//         "AWS",   "123456789012", "prod-data", "CC-2002", "Dados", "Lakehouse", "joao.lima", "prod",
+//         "OCI",   "ocid1.compartment.oc1..aaaa", "erp-prod", "CC-3003", "Financeiro", "ERP", "carla.reis", "prod"
+//     ]
+
+// -------------------------------------------------------------------------------------
+// 2. Custos das tres nuvens com provider normalizado e colunas de conveniencia
+// -------------------------------------------------------------------------------------
+.create-or-alter function with (folder = "Multicloud", docstring = "Costs() com Provider normalizado (Azure/AWS/OCI), mes e chaves de alocacao")
+CostsMulticloud() {
+    Costs()
+    | extend Provider = case(
+        ProviderName has_any ("Microsoft", "Azure"), "Azure",
+        ProviderName has_any ("AWS", "Amazon"), "AWS",
+        ProviderName has_any ("Oracle", "OCI"), "OCI",
+        isempty(ProviderName) and x_SourceProvider has "Microsoft", "Azure",
+        isempty(ProviderName), "Desconhecido",
+        ProviderName)
+    | extend ChargeMonth = startofmonth(ChargePeriodStart),
+             ChargeDay = startofday(ChargePeriodStart),
+             AccountKey = coalesce(SubAccountId, BillingAccountId),
+             TagsJson = todynamic(tostring(Tags))
+    | extend TagCostCenter = coalesce(
+        tostring(TagsJson["cost-center"]), tostring(TagsJson["costcenter"]), tostring(TagsJson["CostCenter"]),
+        tostring(TagsJson["centro-de-custo"]), tostring(TagsJson["CentroDeCusto"]))
+    | extend TagApplication = coalesce(tostring(TagsJson["application"]), tostring(TagsJson["app"]), tostring(TagsJson["Application"]))
+    | extend TagEnvironment = coalesce(tostring(TagsJson["environment"]), tostring(TagsJson["env"]), tostring(TagsJson["Environment"]))
+}
+
+// -------------------------------------------------------------------------------------
+// 3. Custos alocados: tag do recurso tem prioridade; depois o mapa de contas; senao "Nao alocado"
+// -------------------------------------------------------------------------------------
+.create-or-alter function with (folder = "Multicloud", docstring = "Custos com CostCenter/BusinessUnit/Application resolvidos (tag > mapa de contas > Nao alocado)")
+CostsAllocated() {
+    CostsMulticloud()
+    | lookup kind=leftouter (CostCenterMap | project Provider, AccountId, MapCostCenter = CostCenter, MapBusinessUnit = BusinessUnit, MapApplication = Application, MapOwner = Owner, MapEnvironment = Environment)
+        on Provider, $left.AccountKey == $right.AccountId
+    | extend CostCenter = coalesce(TagCostCenter, MapCostCenter, "Nao alocado"),
+             BusinessUnit = coalesce(MapBusinessUnit, "Nao alocado"),
+             Application = coalesce(TagApplication, MapApplication, "Nao alocado"),
+             Environment = coalesce(TagEnvironment, MapEnvironment, "n/d"),
+             Owner = MapOwner,
+             IsAllocated = isnotempty(TagCostCenter) or isnotempty(MapCostCenter)
+    | project-away MapCostCenter, MapBusinessUnit, MapApplication, MapOwner, MapEnvironment
+}
+
+// -------------------------------------------------------------------------------------
+// 4. Anomalias de custo diario por provider e servico (substitui o Anomaly Detector)
+//    score > 1.5 desvios; use lookback >= 60d para uma sazonalidade semanal confiavel
+// -------------------------------------------------------------------------------------
+.create-or-alter function with (folder = "Multicloud", docstring = "Anomalias de custo diario (series_decompose_anomalies) por Provider e ServiceName")
+CostAnomalies(lookback: timespan = 90d, threshold: real = 1.5) {
+    let startDay = startofday(ago(lookback));
+    let endDay = startofday(now());
+    CostsMulticloud()
+    | where ChargePeriodStart >= startDay and ChargePeriodStart < endDay
+    | summarize Cost = sum(EffectiveCost) by Provider, ServiceName, ChargeDay
+    | make-series Cost = sum(Cost) default = 0 on ChargeDay from startDay to endDay step 1d by Provider, ServiceName
+    | extend (Anomaly, Score, Baseline) = series_decompose_anomalies(Cost, threshold, 7, 'linefit')
+    | mv-expand ChargeDay to typeof(datetime), Cost to typeof(real), Anomaly to typeof(int), Score to typeof(real), Baseline to typeof(real)
+    | where Anomaly != 0
+    | extend Delta = Cost - Baseline, DeltaPct = iff(Baseline > 0, round(100.0 * (Cost - Baseline) / Baseline, 1), real(null))
+    | project ChargeDay, Provider, ServiceName, Cost = round(Cost, 2), Baseline = round(Baseline, 2), Delta = round(Delta, 2), DeltaPct, Score = round(Score, 2), Direction = iff(Anomaly > 0, "Alta", "Baixa")
+    | order by ChargeDay desc, abs(Delta) desc
+}
+
+// -------------------------------------------------------------------------------------
+// 5. Recomendacoes das tres nuvens (Azure via hub, AWS Cost Optimization Hub, OCI Cloud Advisor)
+// -------------------------------------------------------------------------------------
+.create-or-alter function with (folder = "Multicloud", docstring = "Recommendations() com Provider normalizado e economia mensal estimada")
+RecommendationsAll() {
+    Recommendations()
+    | extend Provider = case(
+        ProviderName has_any ("Microsoft", "Azure") or x_SourceProvider has "Microsoft", "Azure",
+        ProviderName has_any ("AWS", "Amazon"), "AWS",
+        ProviderName has_any ("Oracle", "OCI"), "OCI",
+        "Desconhecido")
+    | extend MonthlySavings = coalesce(x_EffectiveCostSavings, 0.0)
+    | extend Category = coalesce(x_RecommendationCategory, tostring(x_RecommendationDetails["type"]), tostring(x_RecommendationDetails["solution"]), "Outros")
+    // mantem apenas a ultima ingestao de cada fonte para nao somar recomendacoes repetidas
+    | summarize arg_max(x_IngestionTime, *) by x_RecommendationId, Provider
+}
+
+// -------------------------------------------------------------------------------------
+// 6. Cobertura de commitments (RI / Savings Plans) por provider: parte do custo elegivel coberto
+// -------------------------------------------------------------------------------------
+.create-or-alter function with (folder = "Multicloud", docstring = "Percentual do custo de uso coberto por commitment discounts, por Provider e mes")
+CommitmentCoverage() {
+    CostsMulticloud()
+    | where ChargeCategory == "Usage"
+    | summarize Total = sum(EffectiveCost), Covered = sumif(EffectiveCost, isnotempty(CommitmentDiscountId)) by Provider, ChargeMonth
+    | extend CoveragePct = iff(Total > 0, round(100.0 * Covered / Total, 1), 0.0)
+}
+
+// -------------------------------------------------------------------------------------
+// 7. Saude da ingestao: ultima carga e ultimo dia com custo por provider
+// -------------------------------------------------------------------------------------
+.create-or-alter function with (folder = "Multicloud", docstring = "Ultima ingestao e ultimo dia de custo por Provider (qualidade de dados)")
+IngestionHealth() {
+    CostsMulticloud()
+    | summarize LastIngestion = max(x_IngestionTime), LastChargeDay = max(ChargeDay), Rows = count(), Accounts = dcount(AccountKey) by Provider
+    | extend HoursSinceIngestion = round((now() - LastIngestion) / 1h, 1),
+             DaysBehind = toint((startofday(now()) - LastChargeDay) / 1d),
+             Status = case(HoursSinceIngestion > 48, "Atrasado", DaysBehind > 3, "Dados defasados", "OK")
+}

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinOps Multicloud</title>
+<!--
+  FinOps Multicloud
+  Construído por Wanderlei Grizolli Junior, Sr. Solution Engineer.
+  Baseado no Microsoft FinOps toolkit (https://github.com/microsoft/finops-toolkit).
+-->
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230078D4'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='Segoe UI,Arial' font-weight='700'>F</text></svg>">
+</head>
+<body>
+
+<aside class="lateral">
+  <div class="marca">
+    <span class="marca-nome">FinOps</span>
+    <span class="marca-tag">MULTICLOUD</span>
+  </div>
+
+  <nav>
+    <div class="nav-grupo">Análise</div>
+    <a href="#/visao-geral" data-rota="visao-geral" class="nav-item ativo"><span class="nav-icone">◈</span> Visão geral</a>
+    <a href="#/tecnologia" data-rota="tecnologia" class="nav-item"><span class="nav-icone">◱</span> Por tecnologia</a>
+    <a href="#/nuvens" data-rota="nuvens" class="nav-item"><span class="nav-icone">☁</span> Por nuvem</a>
+    <a href="#/recursos" data-rota="recursos" class="nav-item"><span class="nav-icone">▤</span> Recursos</a>
+
+    <div class="nav-grupo">Domínios</div>
+    <a href="#/ia" data-rota="ia" class="nav-item"><span class="nav-icone">✦</span> Inteligência artificial</a>
+    <a href="#/bancos" data-rota="bancos" class="nav-item"><span class="nav-icone">▣</span> Bancos de dados</a>
+
+    <div class="nav-grupo">Gestão</div>
+    <a href="#/governanca" data-rota="governanca" class="nav-item"><span class="nav-icone">◎</span> Governança</a>
+    <a href="#/chargeback" data-rota="chargeback" class="nav-item"><span class="nav-icone">⇄</span> Showback e chargeback</a>
+    <a href="#/otimizacao" data-rota="otimizacao" class="nav-item"><span class="nav-icone">◇</span> Otimização</a>
+    <a href="#/previsao" data-rota="previsao" class="nav-item"><span class="nav-icone">↗</span> Previsão</a>
+
+    <div class="nav-grupo">Operação</div>
+    <a href="#/alertas" data-rota="alertas" class="nav-item"><span class="nav-icone">◉</span> Alertas <span id="badge-alertas" class="badge oculto">0</span></a>
+    <a href="#/insights" data-rota="insights" class="nav-item"><span class="nav-icone">✧</span> Insights</a>
+    <a href="#/qualidade" data-rota="qualidade" class="nav-item"><span class="nav-icone">◐</span> Qualidade do dado</a>
+    <a href="#/relatorio" data-rota="relatorio" class="nav-item"><span class="nav-icone">▥</span> Relatório e exportação</a>
+  </nav>
+
+  <div class="lateral-rodape">
+    <button id="btn-tema" class="btn-lateral" title="Alternar tema"><span id="icone-tema">☀</span> <span id="texto-tema">Tema claro</span></button>
+    <button id="btn-sobre" class="btn-lateral" title="Sobre esta solução"><span>ⓘ</span> Sobre</button>
+    <div class="status-fonte" id="status-fonte"><span class="ponto"></span> <span id="status-texto">carregando</span></div>
+  </div>
+</aside>
+
+<main class="conteudo">
+  <header class="topo">
+    <div>
+      <h1 id="titulo-pagina">Visão geral</h1>
+      <p id="subtitulo-pagina">Custo consolidado de todas as nuvens, em formato FOCUS</p>
+    </div>
+    <div class="topo-acoes">
+      <select id="filtro-meses" class="campo">
+        <option value="1">Mês corrente</option>
+        <option value="3">Últimos 3 meses</option>
+        <option value="6" selected>Últimos 6 meses</option>
+        <option value="12">Últimos 12 meses</option>
+        <option value="24">Últimos 24 meses</option>
+        <option value="0">Tudo</option>
+      </select>
+      <select id="filtro-nuvem" class="campo"><option value="">Todas as nuvens</option></select>
+      <select id="filtro-categoria" class="campo"><option value="">Todas as categorias</option></select>
+      <select id="filtro-assinatura" class="campo"><option value="">Todas as assinaturas</option></select>
+      <div class="menu-export">
+        <button id="btn-exportar" class="btn btn-secundario" title="Exportar">⤓ Exportar</button>
+        <div id="menu-export" class="menu oculto">
+          <a id="exp-pdf" href="#">Relatório executivo (PDF)</a>
+          <a id="exp-xlsx" href="#">Dados completos (Excel)</a>
+        </div>
+      </div>
+      <button id="btn-atualizar" class="btn" title="Recarregar do storage">↻</button>
+    </div>
+  </header>
+
+  <div id="alerta" class="alerta oculto"></div>
+  <section id="pagina" class="pagina"></section>
+
+  <footer class="rodape">
+    <span id="rodape-info">FinOps Multicloud</span>
+    <span id="rodape-credito"></span>
+  </footer>
+</main>
+
+<div id="carregando" class="carregando oculto"><div class="giro"></div></div>
+
+<div id="modal" class="modal oculto">
+  <div class="modal-caixa">
+    <div class="modal-topo"><h2 id="modal-titulo"></h2><button id="modal-fechar" class="btn-x">✕</button></div>
+    <div id="modal-corpo" class="modal-corpo"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/pages.js"></script>
+<script src="/static/js/pages2.js"></script>
+</body>
+</html>

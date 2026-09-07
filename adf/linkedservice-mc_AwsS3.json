@@ -1,0 +1,27 @@
+{
+  "name": "mc_AwsS3",
+  "properties": {
+    "type": "AmazonS3",
+    "annotations": [],
+    "typeProperties": {
+      "serviceUrl": "https://s3.<<REGIAO>>.amazonaws.com",
+      "authenticationType": "AccessKey",
+      "accessKeyId": {
+        "type": "AzureKeyVaultSecret",
+        "store": {
+          "referenceName": "mc_KeyVault",
+          "type": "LinkedServiceReference"
+        },
+        "secretName": "aws-access-key-id"
+      },
+      "secretAccessKey": {
+        "type": "AzureKeyVaultSecret",
+        "store": {
+          "referenceName": "mc_KeyVault",
+          "type": "LinkedServiceReference"
+        },
+        "secretName": "aws-secret-access-key"
+      }
+    }
+  }
+}

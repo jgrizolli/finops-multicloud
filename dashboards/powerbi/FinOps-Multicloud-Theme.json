@@ -1,0 +1,34 @@
+{
+  "name": "FinOps Multicloud (Microsoft blue)",
+  "dataColors": ["#0078D4", "#FF9900", "#C74634", "#50E6FF", "#1B3A6B", "#8A8886", "#107C10", "#FFB900"],
+  "background": "#FFFFFF",
+  "foreground": "#1B3A6B",
+  "tableAccent": "#0078D4",
+  "good": "#107C10",
+  "neutral": "#FFB900",
+  "bad": "#C74634",
+  "maximum": "#1B3A6B",
+  "center": "#0078D4",
+  "minimum": "#DEEBF7",
+  "textClasses": {
+    "title":  { "fontFace": "Segoe UI Semibold", "fontSize": 14, "color": "#1B3A6B" },
+    "header": { "fontFace": "Segoe UI Semibold", "fontSize": 12, "color": "#1B3A6B" },
+    "label":  { "fontFace": "Segoe UI", "fontSize": 10, "color": "#4A5A6E" },
+    "callout":{ "fontFace": "Segoe UI Semibold", "fontSize": 28, "color": "#0078D4" }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "border": [{ "show": true, "color": { "solid": { "color": "#DEEBF7" } }, "radius": 8 }],
+        "title": [{ "show": true, "fontColor": { "solid": { "color": "#1B3A6B" } }, "fontSize": 12, "fontFamily": "Segoe UI Semibold" }],
+        "dropShadow": [{ "show": false }]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#F3F7FB" } }, "transparency": 0 }]
+      }
+    }
+  }
+}

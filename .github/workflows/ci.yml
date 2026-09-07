@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  powershell:
+    name: Analise dos scripts PowerShell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -ErrorAction Stop
+
+      - name: Analisar deploy e webapp
+        shell: pwsh
+        run: |
+          $achados = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error, Warning `
+              -ExcludeRule PSAvoidUsingWriteHost, PSUseShouldProcessForStateChangingFunctions
+          if ($achados) {
+              $achados | Format-Table -AutoSize | Out-String | Write-Host
+          }
+          $erros = @($achados | Where-Object Severity -eq 'Error')
+          if ($erros.Count -gt 0) {
+              throw "PSScriptAnalyzer encontrou $($erros.Count) erro(s)."
+          }
+
+  bicep:
+    name: Compilacao dos arquivos Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar
+        run: |
+          az bicep install
+          for arquivo in $(find . -name '*.bicep'); do
+            echo "Compilando $arquivo"
+            az bicep build --file "$arquivo" --stdout > /dev/null
+          done
+
+  python:
+    name: Sintaxe da API e do conector
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compilar os modulos
+        run: |
+          python -m compileall -q webapp/api functions/oci-connector
+
+      - name: Conferir dependencias declaradas
+        run: |
+          test -f webapp/api/requirements.txt
+          test -f functions/oci-connector/requirements.txt
+
+  dados:
+    name: Sintaxe de JSON, YAML e KQL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validar JSON
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          falhas = []
+          for caminho in pathlib.Path('.').rglob('*.json'):
+              if any(p in caminho.parts for p in ('.git', 'node_modules')):
+                  continue
+              try:
+                  json.loads(caminho.read_text(encoding='utf-8-sig'))
+              except Exception as erro:
+                  falhas.append(f"{caminho}: {erro}")
+          print('\n'.join(falhas) if falhas else 'JSON ok')
+          sys.exit(1 if falhas else 0)
+          PY
+
+      - name: Validar YAML
+        run: |
+          pip install pyyaml
+          python - <<'PY'
+          import pathlib, sys, yaml
+          falhas = []
+          for caminho in list(pathlib.Path('.').rglob('*.yml')) + list(pathlib.Path('.').rglob('*.yaml')):
+              if '.git' in caminho.parts:
+                  continue
+              try:
+                  list(yaml.safe_load_all(caminho.read_text(encoding='utf-8')))
+              except Exception as erro:
+                  falhas.append(f"{caminho}: {erro}")
+          print('\n'.join(falhas) if falhas else 'YAML ok')
+          sys.exit(1 if falhas else 0)
+          PY
+
+  segredos:
+    name: Varredura de segredos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Procurar padroes proibidos
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys
+
+          binarios = {'.pbit', '.pbix', '.docx', '.pptx', '.xlsx', '.png', '.jpg', '.pdf', '.zip'}
+          exemplos = {
+              '00000000-0000-0000-0000-000000000000',
+              '1111aaaa-2222-bbbb-3333-cccc4444dddd',
+              '3f2a1111-2222-3333-4444-555566667777',
+          }
+          padroes = {
+              'chave AWS': re.compile(r'AKIA[0-9A-Z]{16}'),
+              'chave privada': re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----'),
+              'connection string': re.compile(r'AccountKey=[A-Za-z0-9+/=]{20,}'),
+              'client secret': re.compile(r'(client_?secret|ClientSecret)\s*[:=]\s*["\'][^"\']{8,}'),
+          }
+
+          falhas = []
+          for caminho in pathlib.Path('.').rglob('*'):
+              if not caminho.is_file() or '.git' in caminho.parts:
+                  continue
+              if caminho.suffix.lower() in binarios:
+                  continue
+              try:
+                  texto = caminho.read_text(encoding='utf-8', errors='ignore')
+              except Exception:
+                  continue
+              for nome, padrao in padroes.items():
+                  achado = padrao.search(texto)
+                  if achado and 'EXAMPLE' not in achado.group(0):
+                      falhas.append(f"{caminho}: possivel {nome}")
+
+          print('\n'.join(falhas) if falhas else 'Nenhum segredo encontrado')
+          sys.exit(1 if falhas else 0)
+          PY

@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  FinOps Multicloud: bucket S3 + Data Export FOCUS 1.0 (parquet, diario, overwrite) +
+  export opcional de recomendacoes do Cost Optimization Hub + usuario IAM somente leitura
+  para o Data Factory do FinOps hub. Implante na conta PAGADORA (management/payer),
+  regiao us-east-1 (Data Exports e um servico global operado em us-east-1).
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: "Nome global unico do bucket (ex.: finops-focus-exports-123456789012)."
+  S3Prefix:
+    Type: String
+    Default: focus
+    Description: Prefixo dentro do bucket (o mesmo valor de awsS3Prefix no Bicep).
+  FocusExportName:
+    Type: String
+    Default: finops-focus-1-0
+    Description: Nome do export FOCUS (o mesmo valor de awsExportName no Bicep).
+  EnableRecommendationsExport:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Cria tambem o export da tabela COST_OPTIMIZATION_RECOMMENDATIONS (exige Cost Optimization Hub ativado).
+  RecommendationsExportName:
+    Type: String
+    Default: finops-coh-recommendations
+  ReaderUserName:
+    Type: String
+    Default: finops-hub-s3-reader
+    Description: Usuario IAM cujo access key sera guardado no Key Vault do hub (somente leitura no bucket).
+
+Conditions:
+  CreateRecs: !Equals [!Ref EnableRecommendationsExport, "true"]
+
+Resources:
+
+  # ------------------------------------------------------------------ bucket
+  ExportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-exports
+            Status: Enabled
+            ExpirationInDays: 400
+      Tags:
+        - Key: solution
+          Value: finops-multicloud
+
+  # Politica exigida pela documentacao do Data Exports (o servico bcm-data-exports grava no bucket)
+  ExportBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ExportBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnableAWSDataExportsToWriteToS3
+            Effect: Allow
+            Principal:
+              Service: bcm-data-exports.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:bcm-data-exports:us-east-1:${AWS::AccountId}:export/*"
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+  # ------------------------------------------------------------------ export FOCUS 1.0
+  FocusExport:
+    Type: AWS::BCMDataExports::Export
+    DependsOn: ExportBucketPolicy
+    Properties:
+      Export:
+        Name: !Ref FocusExportName
+        Description: FOCUS 1.0 with AWS columns para o FinOps hub (parquet diario, overwrite)
+        DataQuery:
+          QueryStatement: >-
+            SELECT AvailabilityZone, BilledCost, BillingAccountId, BillingAccountName, BillingCurrency,
+            BillingPeriodEnd, BillingPeriodStart, ChargeCategory, ChargeClass, ChargeDescription,
+            ChargeFrequency, ChargePeriodEnd, ChargePeriodStart, CommitmentDiscountCategory,
+            CommitmentDiscountId, CommitmentDiscountName, CommitmentDiscountStatus, CommitmentDiscountType,
+            ConsumedQuantity, ConsumedUnit, ContractedCost, ContractedUnitPrice, EffectiveCost,
+            InvoiceIssuerName, ListCost, ListUnitPrice, PricingCategory, PricingQuantity, PricingUnit,
+            ProviderName, PublisherName, RegionId, RegionName, ResourceId, ResourceName, ResourceType,
+            ServiceCategory, ServiceName, SkuId, SkuPriceId, SubAccountId, SubAccountName, Tags,
+            x_CostCategories, x_Discounts, x_Operation, x_ServiceCode, x_UsageType
+            FROM FOCUS_1_0_AWS
+          TableConfigurations: {}
+        DestinationConfigurations:
+          S3Destination:
+            S3Bucket: !Ref ExportBucket
+            S3Prefix: !Ref S3Prefix
+            S3Region: !Ref AWS::Region
+            S3OutputConfigurations:
+              Format: PARQUET
+              Compression: PARQUET
+              OutputType: CUSTOM
+              Overwrite: OVERWRITE_REPORT
+        RefreshCadence:
+          Frequency: SYNCHRONOUS
+
+  # ------------------------------------------------------------------ export recomendacoes (opcional)
+  RecommendationsExport:
+    Type: AWS::BCMDataExports::Export
+    Condition: CreateRecs
+    DependsOn: ExportBucketPolicy
+    Properties:
+      Export:
+        Name: !Ref RecommendationsExportName
+        Description: Cost Optimization Hub recommendations para o FinOps hub (parquet diario)
+        DataQuery:
+          QueryStatement: >-
+            SELECT account_id, action_type, currency_code, current_resource_summary, current_resource_type,
+            estimated_monthly_cost_after_discount, estimated_monthly_cost_before_discount,
+            estimated_monthly_savings_after_discount, estimated_monthly_savings_before_discount,
+            estimated_savings_percentage_after_discount, implementation_effort, last_refresh_timestamp,
+            recommendation_id, recommendation_lookback_period_in_days, recommendation_source,
+            recommended_resource_summary, recommended_resource_type, region, resource_arn, resource_id,
+            restart_needed, rollback_possible, source, tags
+            FROM COST_OPTIMIZATION_RECOMMENDATIONS
+          TableConfigurations:
+            COST_OPTIMIZATION_RECOMMENDATIONS:
+              INCLUDE_ALL_RECOMMENDATIONS: "TRUE"
+              FILTER: "{}"
+        DestinationConfigurations:
+          S3Destination:
+            S3Bucket: !Ref ExportBucket
+            S3Prefix: !Ref S3Prefix
+            S3Region: !Ref AWS::Region
+            S3OutputConfigurations:
+              Format: PARQUET
+              Compression: PARQUET
+              OutputType: CUSTOM
+              Overwrite: CREATE_NEW_REPORT
+        RefreshCadence:
+          Frequency: SYNCHRONOUS
+
+  # ------------------------------------------------------------------ leitor para o Data Factory
+  ReaderUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Ref ReaderUserName
+      Tags:
+        - Key: solution
+          Value: finops-multicloud
+
+  ReaderPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: finops-hub-s3-readonly
+      Users: [!Ref ReaderUser]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: [s3:ListBucket, s3:GetBucketLocation]
+            Resource: !Sub "arn:aws:s3:::${BucketName}"
+          - Effect: Allow
+            Action: [s3:GetObject]
+            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+
+Outputs:
+  BucketName:
+    Value: !Ref ExportBucket
+  FocusDataPath:
+    Description: Pasta onde o parquet FOCUS chega (BILLING_PERIOD=yyyy-MM)
+    Value: !Sub "s3://${BucketName}/${S3Prefix}/${FocusExportName}/data/BILLING_PERIOD=yyyy-MM/"
+  ReaderUserName:
+    Description: Gere o access key deste usuario (IAM > Users > Security credentials) e guarde no Key Vault do hub.
+    Value: !Ref ReaderUser

@@ -1,0 +1,33 @@
+{
+  "name": "mc_aws_RecommendationsDailySchedule",
+  "properties": {
+    "description": "Recomendacoes do Cost Optimization Hub todo dia as 08:00 UTC",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "mc_aws_IngestRecommendations",
+          "type": "PipelineReference"
+        }
+      }
+    ],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2026-01-01T08:00:00Z",
+        "timeZone": "UTC",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            8
+          ]
+        }
+      }
+    }
+  }
+}

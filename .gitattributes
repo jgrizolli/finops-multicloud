@@ -1,0 +1,27 @@
+* text=auto eol=lf
+
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+*.md      text diff=markdown
+*.py      text diff=python
+*.json    text
+*.bicep   text
+*.kql     text
+*.yaml    text
+*.yml     text
+*.css     text
+*.js      text
+*.html    text
+
+*.pbit  binary
+*.pbix  binary
+*.docx  binary
+*.pptx  binary
+*.xlsx  binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.pem   binary

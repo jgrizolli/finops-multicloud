@@ -1,0 +1,49 @@
+# Segredos e parametros reais (nunca versionar)
+deploy/parameters.json
+deploy/parameters.*.json
+!deploy/parameters.example.json
+**/local.settings.json
+!**/local.settings.example.json
+*.pem
+*.key
+*.pfx
+.env
+.env.*
+settings-atual.json
+
+# Saidas de execucao e cache
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Node (caso a interface ganhe build no futuro)
+node_modules/
+dist/
+build/
+
+# Azure e ferramentas
+.azure/
+*.zip
+!docs/entregaveis/*.zip
+publish/
+bin/
+obj/
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# Logs e temporarios
+*.log
+*.tmp
+tmp/
+temp/

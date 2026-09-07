@@ -1,0 +1,68 @@
+name: Erro na instalacao ou na operacao
+description: Algo nao instalou, parou de funcionar ou entregou o resultado errado
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de abrir, confira `docs/08-erros-regras-limites.md` (erros comuns) e `docs/09-diario-de-bordo.md`.
+  - type: textarea
+    id: sintoma
+    attributes:
+      label: O que aconteceu
+      description: Sintoma exato, com a mensagem de erro completa
+      placeholder: Cole aqui a saida do comando
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que voce esperava que acontecesse
+    validations:
+      required: true
+  - type: input
+    id: comando
+    attributes:
+      label: Comando executado
+      placeholder: .\deploy\Deploy-FinOpsMulticloud.ps1 -ParametersFile .\deploy\parameters.json
+    validations:
+      required: true
+  - type: dropdown
+    id: nivel
+    attributes:
+      label: Nivel instalado
+      options:
+        - "0 (somente storage)"
+        - "1 (Fabric F2 ou Data Explorer)"
+        - "2 (escala)"
+        - "Nao sei"
+    validations:
+      required: true
+  - type: dropdown
+    id: hospedagem
+    attributes:
+      label: Hospedagem da interface web
+      options:
+        - "App Service"
+        - "Container Apps"
+        - "Nao instalei a interface"
+    validations:
+      required: true
+  - type: input
+    id: regiao
+    attributes:
+      label: Regiao do Azure
+      placeholder: eastus2
+  - type: input
+    id: powershell
+    attributes:
+      label: Versao do PowerShell
+      placeholder: 7.4.5
+  - type: checkboxes
+    id: seguranca
+    attributes:
+      label: Confirmacao
+      options:
+        - label: Removi da mensagem qualquer identificador real de assinatura, tenant, OCID ou chave de acesso
+          required: true

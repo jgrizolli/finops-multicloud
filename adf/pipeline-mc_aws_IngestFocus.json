@@ -1,0 +1,55 @@
+{
+  "name": "mc_aws_IngestFocus",
+  "properties": {
+    "description": "Orquestra a ingestao do FOCUS da AWS para o mes atual e os meses anteriores configurados.",
+    "folder": {
+      "name": "Multicloud"
+    },
+    "annotations": [],
+    "parameters": {
+      "monthsBack": {
+        "type": "int",
+        "defaultValue": 1
+      }
+    },
+    "activities": [
+      {
+        "name": "ForEachMonth",
+        "type": "ForEach",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@range(0, add(pipeline().parameters.monthsBack, 1))",
+            "type": "Expression"
+          },
+          "isSequential": true,
+          "activities": [
+            {
+              "name": "IngestMonth",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "policy": {
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "mc_aws_IngestFocusMonth",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "billingPeriod": {
+                    "value": "@formatDateTime(addToTime(utcNow(), mul(-1, item()), 'Month'), 'yyyy-MM')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

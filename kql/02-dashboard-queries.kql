@@ -1,0 +1,63 @@
+// FinOps Multicloud: consultas dos blocos do Real-Time Dashboard (banco Hub).
+// Parametros do dashboard: _startTime/_endTime (Período) e _provider (Nuvem, multi-selecao: Azure, AWS, OCI).
+// Pre-requisito: rodar 01-multicloud-functions.kql no banco Hub.
+
+// ===== [Visão executiva] Custo efetivo no período  (visual: card)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Custo = round(sum(EffectiveCost), 0)
+
+// ===== [Visão executiva] Variação vs. período anterior  (visual: card)
+let span = _endTime - _startTime;
+let atual = toscalar(CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize sum(EffectiveCost));
+let anterior = toscalar(CostsMulticloud() | where ChargePeriodStart >= _startTime - span and ChargePeriodStart < _startTime | where Provider in (_provider) | summarize sum(EffectiveCost));
+print ['Variação %'] = iff(anterior > 0, round(100.0 * (atual - anterior) / anterior, 1), real(null))
+
+// ===== [Visão executiva] Economia mensal identificada  (visual: card)
+RecommendationsAll() | where Provider in (_provider) | summarize Economia = round(sum(MonthlySavings), 0)
+
+// ===== [Visão executiva] Custo alocado a centro de custo (%)  (visual: card)
+CostsAllocated() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Pct = round(100.0 * sumif(EffectiveCost, IsAllocated) / sum(EffectiveCost), 1)
+
+// ===== [Visão executiva] Custo por nuvem  (visual: pie)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Custo = round(sum(EffectiveCost), 2) by Provider | order by Custo desc
+
+// ===== [Visão executiva] Custo diário por nuvem  (visual: stackedcolumn)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Custo = round(sum(EffectiveCost), 2) by ChargeDay, Provider | order by ChargeDay asc
+
+// ===== [Visão executiva] Top 10 serviços  (visual: bar)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Custo = round(sum(EffectiveCost), 2) by Provider, ServiceName | top 10 by Custo | extend Serviço = strcat(Provider, ' · ', ServiceName) | project Serviço, Custo | order by Custo asc
+
+// ===== [Visão executiva] Top 10 contas e assinaturas  (visual: bar)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Custo = round(sum(EffectiveCost), 2) by Provider, Conta = coalesce(SubAccountName, SubAccountId, BillingAccountName, BillingAccountId) | top 10 by Custo | extend Conta = strcat(Provider, ' · ', Conta) | project Conta, Custo | order by Custo asc
+
+// ===== [Visão executiva] Custo por centro de custo e nuvem  (visual: table)
+CostsAllocated() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Azure = round(sumif(EffectiveCost, Provider == 'Azure'), 0), AWS = round(sumif(EffectiveCost, Provider == 'AWS'), 0), OCI = round(sumif(EffectiveCost, Provider == 'OCI'), 0), Total = round(sum(EffectiveCost), 0) by CostCenter, BusinessUnit | order by Total desc
+
+// ===== [Onde economizar] Economia mensal por nuvem  (visual: multistat)
+RecommendationsAll() | where Provider in (_provider) | summarize Economia = round(sum(MonthlySavings), 0) by Provider | order by Economia desc
+
+// ===== [Onde economizar] Recomendações por nuvem  (visual: multistat)
+RecommendationsAll() | where Provider in (_provider) | summarize Quantidade = count() by Provider | order by Quantidade desc
+
+// ===== [Onde economizar] Economia por categoria de recomendação  (visual: bar)
+RecommendationsAll() | where Provider in (_provider) | summarize Economia = round(sum(MonthlySavings), 0) by Category, Provider | top 15 by Economia | order by Economia asc
+
+// ===== [Onde economizar] Cobertura de commitments (RI e Savings Plans) por mês  (visual: line)
+CommitmentCoverage() | where ChargeMonth >= startofmonth(_startTime) and ChargeMonth < _endTime | where Provider in (_provider) | project ChargeMonth, Provider, CoveragePct | order by ChargeMonth asc
+
+// ===== [Onde economizar] Top 25 recomendações (maior economia)  (visual: table)
+RecommendationsAll() | where Provider in (_provider) | top 25 by MonthlySavings | project Provider, Category, Recurso = coalesce(ResourceName, ResourceId), Tipo = ResourceType, Conta = coalesce(SubAccountName, SubAccountId), ['Economia/mês'] = round(MonthlySavings, 0), Descrição = x_RecommendationDescription, Data = x_RecommendationDate
+
+// ===== [Onde economizar] Anomalias de custo (últimos 90 dias)  (visual: table)
+CostAnomalies(90d, 1.5) | where Provider in (_provider) | take 50
+
+// ===== [Qualidade dos dados] Saúde da ingestão por nuvem  (visual: table)
+IngestionHealth() | where Provider in (_provider) | project Provider, Status, LastIngestion, HoursSinceIngestion, LastChargeDay, DaysBehind, Rows, Accounts
+
+// ===== [Qualidade dos dados] Custo sem centro de custo por nuvem  (visual: bar)
+CostsAllocated() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | where not(IsAllocated) | summarize ['Não alocado'] = round(sum(EffectiveCost), 0) by Provider | order by ['Não alocado'] asc
+
+// ===== [Qualidade dos dados] Linhas ingeridas por dia e nuvem  (visual: stackedcolumn)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Linhas = count() by ChargeDay, Provider | order by ChargeDay asc
+
+// ===== [Qualidade dos dados] Versão FOCUS e origem dos dados  (visual: table)
+CostsMulticloud() | where ChargePeriodStart >= _startTime and ChargePeriodStart < _endTime | where Provider in (_provider) | summarize Linhas = count(), Custo = round(sum(EffectiveCost), 0), Primeiro = min(ChargePeriodStart), Último = max(ChargePeriodEnd) by Provider, x_SourceName, x_SourceType, x_SourceVersion | order by Provider asc
