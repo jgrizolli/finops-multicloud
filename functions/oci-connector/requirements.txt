@@ -1,4 +1,4 @@
-azure-functions>=1.21
+azure-functions>=2.3.0
 azure-identity>=1.17
 azure-storage-file-datalake>=12.17
 oci>=2.135
