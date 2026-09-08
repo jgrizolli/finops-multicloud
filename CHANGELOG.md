@@ -15,6 +15,10 @@ ve no repositorio.
   clicavel a partir do README, com as 14 paginas navegaveis e a exportacao funcionando.
 * **Capturador de telas** (`docs/capturar-telas.ps1`): abre a previa no Microsoft Edge em modo headless e salva um
   PNG de cada pagina em `docs/images/interface/`. Sem dependencia alem do navegador que ja vem no Windows.
+* **Secao "Sobre esta interface: autoria, e por que ela é substituivel"** no README: registra que a interface foi
+  criada por Wanderlei Grizolli Junior com o auxilio do Microsoft Copilot Cowork, explica que o valor da solucao esta
+  no dado FOCUS do hub e nao na tela, autoriza trocar ou refazer a interface inteira sob a licenca MIT, e detalha a
+  construcao (FastAPI, ECharts, pandas e pyarrow, identidade gerenciada, Bicep, App Service ou Container Apps).
 * **README com a interface em destaque**: tres capturas do ambiente real, em tamanho cheio, cada uma com o texto
   explicando o que a pagina responde: visao geral, inteligencia artificial, e showback e chargeback. Os relatorios
   Power BI passaram a ser apresentados logo abaixo, como a segunda camada de consumo. As imagens tiveram a barra de

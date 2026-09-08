@@ -58,6 +58,41 @@ dono.
 As outras onze páginas estão em [docs/04-interface-web.md](docs/04-interface-web.md), e a construção por dentro em
 [docs/05-referencia-tecnica-interface.md](docs/05-referencia-tecnica-interface.md).
 
+### Sobre esta interface: autoria, e por que ela é substituível
+
+Esta interface foi **criada por mim, Wanderlei Grizolli Junior**, com o auxílio do **Microsoft Copilot Cowork**, ao
+longo da mesma implantação que gerou a documentação deste repositório. E ela é, de propósito, a parte mais
+descartável da solução.
+
+**O que importa é o backend.** O valor está no hub: o dado de custo de Azure, AWS, Google Cloud e Oracle Cloud
+normalizado em **FOCUS**, parquet particionado na camada `ingestion`, com retenção controlada e ingestão auditável.
+Esse dado não pertence a nenhuma tela. Ele é lido por identidade gerenciada e RBAC, então qualquer coisa que fale
+com o Azure Data Lake ou com o Eventhouse consegue consumir o mesmo conjunto: os relatórios Power BI do toolkit, um
+Real-Time Dashboard do Fabric, um notebook, um Grafana, ou uma interface que você escreva do zero em React, Angular,
+Blazor, Streamlit ou o que preferir.
+
+**Então troque à vontade.** Refaça o visual, remova páginas, mude a paleta, traduza, adapte à identidade da sua
+empresa, ou jogue esta interface fora inteira e escreva a sua. A licença é MIT justamente para isso. Nada no hub
+depende do que está em `webapp/`, e apagar essa pasta não quebra a ingestão. O contrário também vale: a camada de
+leitura é isolada (`api/data_source.py` para o parquet, `api/kusto_source.py` para o Eventhouse), então dá para
+apontar a mesma interface para o Fabric sem tocar em uma linha do front.
+
+**Como ela foi construída, em resumo.** Backend em Python com **FastAPI**, servindo uma API por página, e o front em
+HTML, CSS e JavaScript sem framework, com **ECharts** para os gráficos. Nenhum pacote de build, nenhum `node_modules`:
+o navegador recebe o que está em `static/` e pronto. `pandas` e `pyarrow` fazem a leitura e a agregação do parquet
+FOCUS, `azure-identity` e `azure-storage-file-datalake` fazem o acesso sem chave, `azure-data-tables` guarda os
+cadastros (centros de custo, orçamentos, alertas), `reportlab` e `openpyxl` geram o PDF e o Excel da exportação, e
+`azure-communication-email` manda os alertas. A infraestrutura é **Bicep** (`webapp/infra/`), com hospedagem em App
+Service ou Container Apps, e o login é Entra ID. Tudo isso está desenhado arquivo por arquivo em
+[docs/06-entendendo-o-codigo.md](docs/06-entendendo-o-codigo.md).
+
+**O papel do Copilot Cowork.** Ele acelerou a parte mecânica: gerar o esqueleto das páginas, propor a normalização
+FOCUS, escrever os scripts PowerShell de instalação e remoção, montar a prévia estática, e, principalmente,
+transformar cada erro real da implantação em documentação. As decisões de arquitetura, a escolha dos níveis, o que
+entra e o que fica de fora, e cada teste em assinatura de verdade foram meus. Vale dizer também o que não é: nada
+aqui é gerado sem revisão, e o [diário de bordo](docs/09-diario-de-bordo.md) registra os 29 erros que apareceram no
+caminho, justamente porque o primeiro palpite raramente é o que funciona.
+
 > **Quer navegar em vez de olhar?** Baixe [`webapp/FinOps-Preview.html`](webapp/FinOps-Preview.html) e abra com duplo
 > clique. São as 14 páginas com dados sintéticos, exportação em PDF e Excel funcionando, sem instalar nada e sem
 > precisar de internet. Para deixar essa prévia no ar como demo pública, ligue o GitHub Pages em Settings > Pages,
@@ -229,4 +264,5 @@ também de código aberto, e não é um produto oficial da Microsoft nem tem sup
 
 ---
 
-*FinOps Multicloud. Construído por Wanderlei Grizolli Junior, Sr. Solution Engineer. Baseado no Microsoft FinOps toolkit.*
+*FinOps Multicloud. Construído por Wanderlei Grizolli Junior, Sr. Solution Engineer, com o auxílio do Microsoft
+Copilot Cowork. Baseado no Microsoft FinOps toolkit.*
