@@ -73,7 +73,7 @@ Se o Git pedir usuario e senha, use o **Git Credential Manager** (ja vem com o G
 
 ---
 
-## 5. Depois do primeiro push, faca estas cinco coisas
+## 5. Depois do primeiro push, faca estas seis coisas
 
 1. **Crie a primeira release.** É o que garante um ponto no tempo que voce consegue baixar inteiro depois:
 
@@ -86,13 +86,23 @@ Se o Git pedir usuario e senha, use o **Git Credential Manager** (ja vem com o G
 2. **Proteja a branch main.** Settings > Branches > Add rule para `main`, marcando "Require a pull request before
    merging". Assim voce nao apaga o proprio trabalho com um push errado.
 
-3. **Ligue a varredura de segredos.** Settings > Code security and analysis > Secret scanning e Push protection.
+3. **Ligue o GitHub Pages.** Settings > Pages > Source: escolha **GitHub Actions**. O workflow
+   `.github/workflows/pages.yml` publica `webapp/FinOps-Preview.html` como a pagina inicial, e o endereco fica
+   `https://<seu-usuario>.github.io/finops-multicloud/`. É esse link que o botao no topo do README abre.
+
+4. **Ligue a varredura de segredos.** Settings > Code security and analysis > Secret scanning e Push protection.
    Em repositorio publico é gratuito. Isso bloqueia um commit que leve chave por engano.
 
-4. **Ajuste os links dos templates.** Em `.github/ISSUE_TEMPLATE/config.yml`, troque `SEU-USUARIO` pelo seu usuario
-   do GitHub.
+5. **Troque `SEU-USUARIO` pelo seu usuario** no `.github/ISSUE_TEMPLATE/config.yml`:
 
-5. **Preencha About.** No topo direito do repositorio, adicione a descricao e os topicos:
+   ```powershell
+   (Get-Content .github/ISSUE_TEMPLATE/config.yml -Raw) -replace 'SEU-USUARIO', '<seu-usuario>' | Set-Content .github/ISSUE_TEMPLATE/config.yml -NoNewline
+   git add .github/ISSUE_TEMPLATE/config.yml
+   git commit -m "docs: aponta os links dos templates para o repositorio"
+   git push
+   ```
+
+6. **Preencha About.** No topo direito do repositorio, adicione a descricao e os topicos:
    `finops`, `azure`, `aws`, `oci`, `focus`, `powerbi`, `bicep`, `powershell`, `fastapi`, `cost-management`.
 
 ---

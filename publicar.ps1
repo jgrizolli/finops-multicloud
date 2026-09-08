@@ -150,8 +150,9 @@ if ($Tag -and $PSCmdlet.ShouldProcess($Tag, 'criar tag')) {
 
 Write-Host ''
 Ok 'Pronto. Proximos passos sugeridos:'
-Write-Host '    1. Settings > Branches: proteja a branch main' -ForegroundColor White
-Write-Host '    2. Settings > Code security: ligue secret scanning e push protection' -ForegroundColor White
-Write-Host '    3. .github/ISSUE_TEMPLATE/config.yml: troque SEU-USUARIO pelo seu usuario' -ForegroundColor White
-Write-Host '    4. About (topo direito): descricao e topicos finops, azure, aws, oci, focus' -ForegroundColor White
+Write-Host '    1. Settings > Pages: em Source escolha GitHub Actions (publica a demo da interface)' -ForegroundColor White
+Write-Host '    2. Settings > Branches: proteja a branch main' -ForegroundColor White
+Write-Host '    3. Settings > Code security: ligue secret scanning e push protection' -ForegroundColor White
+Write-Host '    4. .github/ISSUE_TEMPLATE/config.yml: troque SEU-USUARIO pelo seu usuario' -ForegroundColor White
+Write-Host '    5. About (topo direito): descricao, topicos e o link da demo' -ForegroundColor White
 Write-Host ''

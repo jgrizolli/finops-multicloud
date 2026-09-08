@@ -10,8 +10,6 @@
 > [Microsoft FinOps toolkit](https://github.com/microsoft/finops-toolkit), a solução de código aberto da Microsoft
 > para engenharia de custos em nuvem.
 
-![Prévia da visão executiva do dashboard](docs/images/dashboard-preview-visao-executiva.png)
-
 Uma única fonte de verdade de custo em **FOCUS** para Azure, AWS, Google Cloud e Oracle Cloud, construída sobre o
 **FinOps hubs** (Microsoft FinOps toolkit), com duas camadas de consumo à sua escolha: os **relatórios Power BI do
 toolkit** e uma **interface web própria** (14 páginas: análise, IA, bancos de dados, governança, showback e
@@ -29,6 +27,47 @@ Google Billing Export   -->  (mesmo princípio, export para bucket)          hub
 
 Toda a documentação funciona **sem acesso à internet**: comandos, valores e explicações estão nos arquivos deste
 pacote. Ela foi escrita durante uma implantação real e registra cada parede encontrada e como foi resolvida.
+
+---
+
+## A interface
+
+Interface própria, em Python, FastAPI e ECharts. Tema escuro por padrão, paleta do azul Microsoft. Lê o parquet em
+FOCUS direto do hub, com identidade gerenciada, sem chave nem connection string.
+
+**Visão geral**, o custo consolidado de todas as nuvens em formato FOCUS: os quatro indicadores do topo, a evolução
+mensal de custo efetivo contra faturado, a distribuição por categoria, o custo diário e os maiores serviços do
+período. Os filtros do topo (período, nuvem, categoria, assinatura) valem para a página inteira, e o botão Exportar
+gera PDF e Excel.
+
+![Visão geral da interface FinOps Multicloud](docs/images/interface/visao-geral.png)
+
+**Inteligência artificial**, uma página só para o gasto com IA, que é a pergunta que mais aparece hoje: quanto a IA
+representa do total mês a mês, a evolução por modelo, e a quebra por serviço (OpenAI, Foundry, Bedrock, Vertex,
+Generative AI), por modelo e por nuvem.
+
+![Página de inteligência artificial](docs/images/interface/inteligencia-artificial.png)
+
+**Showback e chargeback**, o custo virando conversa com as áreas: evolução por centro de custo, participação de cada
+um, e a tabela do que cada área consumiu, com responsável, participação, gasto no mês, orçamento e principais
+serviços. Showback mostra o custo direto para conscientizar; chargeback redistribui proporcionalmente o que não tem
+dono.
+
+![Página de showback e chargeback](docs/images/interface/showback-chargeback.png)
+
+As outras onze páginas estão em [docs/04-interface-web.md](docs/04-interface-web.md), e a construção por dentro em
+[docs/05-referencia-tecnica-interface.md](docs/05-referencia-tecnica-interface.md).
+
+> **Quer navegar em vez de olhar?** Baixe [`webapp/FinOps-Preview.html`](webapp/FinOps-Preview.html) e abra com duplo
+> clique. São as 14 páginas com dados sintéticos, exportação em PDF e Excel funcionando, sem instalar nada e sem
+> precisar de internet. Para deixar essa prévia no ar como demo pública, ligue o GitHub Pages em Settings > Pages,
+> escolhendo GitHub Actions em Source: o workflow `.github/workflows/pages.yml` publica sozinho.
+
+### A outra camada de consumo: os relatórios Power BI do toolkit
+
+Quem prefere Power BI usa os seis relatórios do FinOps toolkit sobre o mesmo hub, sem passar pela interface web.
+
+![Visão executiva no Power BI](docs/images/dashboard-preview-visao-executiva.png)
 
 ---
 
@@ -129,7 +168,7 @@ versionados aqui.
 | `kql/` | Funções multicloud para o banco `Hub` e consultas do dashboard | Nível 1, no Eventhouse |
 | `dashboards/` | Real-Time Dashboard (Fabric), tema e guia do Power BI, e os seis relatórios `.pbit` do modo Storage em `powerbi/templates/` | Depois do deploy |
 | `docs/` | Toda a documentação, dividida por tema (mapa acima), mais `entregaveis/` (Word e PowerPoint), `anexos/` e `images/` | Sempre |
-| `.github/` | Workflow de CI (análise de PowerShell, compilação do Bicep, sintaxe de Python, JSON e YAML, varredura de segredos), templates de issue e de PR, Dependabot | Contribuindo |
+| `.github/` | Workflow de CI (análise de PowerShell, compilação do Bicep, sintaxe de Python, JSON e YAML, varredura de segredos), publicação da prévia no GitHub Pages, templates de issue e de PR, Dependabot | Contribuindo |
 
 ---
 
@@ -149,8 +188,8 @@ versionados aqui.
 ├── functions/oci-connector/     conector OCI em Python
 ├── kql/                         funções e consultas do Eventhouse
 ├── dashboards/                  Real-Time Dashboard do Fabric, tema e relatórios .pbit
-├── docs/                        13 guias, anexos, entregáveis em Word e PowerPoint, imagens
-└── .github/                     CI, templates de issue e PR, Dependabot
+├── docs/                        13 guias, anexos, entregáveis em Word e PowerPoint, imagens da interface
+└── .github/                     CI, publicação da demo no GitHub Pages, templates de issue e PR, Dependabot
 ```
 
 Documentos de repositório: [CONTRIBUTING](CONTRIBUTING.md), [SECURITY](SECURITY.md), [SUPPORT](SUPPORT.md),

@@ -25,5 +25,6 @@ servem como referencia cruzada entre eles.
 |---|---|
 | [`anexos/`](anexos/) | Runbook inicial, instalacao pelo portal multicloud e a visao inicial dos scripts |
 | [`entregaveis/`](entregaveis/) | Documentacao completa em Word, guia de instalacao pelo portal em Word e o HLD v3 em PowerPoint |
-| [`images/`](images/) | Imagens usadas na documentacao, incluindo a previa da visao executiva do dashboard |
+| [`images/`](images/) | Imagens da documentacao: a visao executiva no Power BI e, em `images/interface/`, as telas da interface web exibidas no README |
+| [capturar-telas.ps1](capturar-telas.ps1) | Gera as telas da interface a partir da previa, usando o Microsoft Edge em modo headless. Rode quando o visual mudar |
 | [COMO-CRIAR-O-NOTEBOOK.md](COMO-CRIAR-O-NOTEBOOK.md) | Passo a passo para montar um notebook do Microsoft 365 Copilot com esta documentacao como fonte |

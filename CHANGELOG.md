@@ -3,6 +3,24 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] 2026-09-07
+
+A interface web deixou de ser um arquivo escondido na pasta `webapp/` e passou a ser a primeira coisa que a pessoa
+ve no repositorio.
+
+### Incluido
+
+* **Demo ao vivo no GitHub Pages** (`.github/workflows/pages.yml`): a cada push que altera
+  `webapp/FinOps-Preview.html`, a previa é publicada em `https://<usuario>.github.io/finops-multicloud/` e fica
+  clicavel a partir do README, com as 14 paginas navegaveis e a exportacao funcionando.
+* **Capturador de telas** (`docs/capturar-telas.ps1`): abre a previa no Microsoft Edge em modo headless e salva um
+  PNG de cada pagina em `docs/images/interface/`. Sem dependencia alem do navegador que ja vem no Windows.
+* **README com a interface em destaque**: tres capturas do ambiente real, em tamanho cheio, cada uma com o texto
+  explicando o que a pagina responde: visao geral, inteligencia artificial, e showback e chargeback. Os relatorios
+  Power BI passaram a ser apresentados logo abaixo, como a segunda camada de consumo. As imagens tiveram a barra de
+  status do navegador recortada, para nao expor o endereco da instalacao.
+* `publicar.ps1` captura as telas sozinho quando elas estao faltando, antes do primeiro commit.
+
 ## [1.0.0] 2026-09-07
 
 Primeira versao publicada no GitHub, com o conteudo consolidado da implantacao real de setembro de 2026.
