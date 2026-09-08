@@ -6,7 +6,7 @@
 [![PowerShell 7](https://img.shields.io/badge/PowerShell-7-0078D4.svg)](docs/11-comandos.md)
 [![Documentação](https://img.shields.io/badge/documenta%C3%A7%C3%A3o-13%20guias-0078D4.svg)](docs/)
 
-> Construído por **Wanderlei Grizolli Junior**, Sr. Solution Engineer. Baseado no
+> Construído para ser um solução de report de custos baseado no Microsoft Finops Toolkit
 > [Microsoft FinOps toolkit](https://github.com/microsoft/finops-toolkit), a solução de código aberto da Microsoft
 > para engenharia de custos em nuvem.
 
