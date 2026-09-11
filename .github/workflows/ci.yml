@@ -98,6 +98,18 @@ jobs:
           pip install pyyaml
           python - <<'PY'
           import pathlib, sys, yaml
+          
+          # Add constructor for CloudFormation intrinsic functions
+          def cfn_constructor(loader, tag_suffix, node):
+              if isinstance(node, yaml.MappingNode):
+                  return loader.construct_mapping(node)
+              elif isinstance(node, yaml.SequenceNode):
+                  return loader.construct_sequence(node)
+              else:
+                  return loader.construct_scalar(node)
+          
+          yaml.add_multi_constructor('!', cfn_constructor, Loader=yaml.SafeLoader)
+          
           falhas = []
           for caminho in list(pathlib.Path('.').rglob('*.yml')) + list(pathlib.Path('.').rglob('*.yaml')):
               if '.git' in caminho.parts:
