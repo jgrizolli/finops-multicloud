@@ -1,5 +1,5 @@
 {
-  "_comentario": "Copie para parameters.json e preencha. As chaves sao os nomes dos parametros do Deploy-FinOpsMulticloud.ps1. Nunca versione o arquivo com segredos. Em assinaturas com politica que desliga chave de storage (ex.: internas da Microsoft), use ResourceGroupTags = { SecurityControl: Ignore }.",
+  "_comentario": "Copie para parameters.json e preencha. As chaves sao os nomes dos parametros do Deploy-FinOpsMulticloud.ps1. Nunca versione o arquivo com segredos. Em assinaturas com politica que[...]",
   "SubscriptionId": "Inserir-Subscription-Id-Aqui",
   "ResourceGroup": "Nome-do-Resource-Group",
   "Location": "Regiao-do-Resource-Group",
@@ -20,8 +20,8 @@
   "AwsExportName": "finops-focus-1-0",
   "AwsPayerAccountId": "123456789012",
   "AwsRegion": "us-east-1",
-  "AwsAccessKeyId": "AKIA....",
-  "AwsSecretAccessKey": "....",
+  "AwsAccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+  "AwsSecretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
   "AwsRecommendations": true,
   "AwsRecommendationsExportName": "finops-coh-recommendations",
   "SkipOci": true,
